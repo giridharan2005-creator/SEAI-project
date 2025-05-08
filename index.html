@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Health Care Center</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+      .logo { width: 50px; height: 50px; margin-left: 2px; }
+      .myimg { width: 50px; height: 50px; border: 2px solid black; border-radius: 25px; }
+    </style>
+  </head>
+
+  <body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <div class="container-fluid">
+        <div class="logo">
+          <img class="myimg" src="{{ url_for('static', filename='img.png') }}" alt="Logo">
+        </div>
+        <a class="navbar-brand" href="#">Health Center</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
+            <li class="nav-item"><a class="nav-link" href="/about">About</a></li>
+            <li class="nav-item"><a class="nav-link" href="/contact">Contact</a></li>
+            <li class="nav-item"><a class="nav-link" href="/developer">Developer</a></li>
+            <li class="nav-item"><a class="nav-link" href="/blog">Blog</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main Content -->
+    <h1 class="mt-4 my-4 text-center text-success">Health Care Center</h1>
+    <div class="container my-4" style="background: black; color: white; border-radius: 15px; padding: 40px;">
+      <form action="/predict" method="post">
+        <div class="form-group">
+          <label for="symptoms">Enter Symptoms:</label>
+          <input type="text" class="form-control" id="symptoms" name="symptoms" placeholder="e.g. itching, headache, fatigue">
+        </div>
+
+        <br>
+        <button type="button" id="startSpeechRecognition" class="btn btn-primary mb-3">
+          Start Speech Recognition
+        </button>
+
+        <div id="transcription" class="mb-3"></div>
+
+        {% if message %}
+          <div class="alert alert-warning">{{ message }}</div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-danger btn-lg w-100">Predict</button>
+      </form>
+    </div>
+
+    {% if predicted_disease %}
+    <!-- Prediction Results -->
+    <h2 class="text-center my-4">AI Diagnosis Results</h2>
+    <div class="container text-center">
+      <div class="d-flex flex-wrap justify-content-center gap-2">
+        <button class="btn" style="background:#b6c512;" data-bs-toggle="modal" data-bs-target="#diseaseModal">Disease</button>
+        <button class="btn" style="background:#b73f3f;" data-bs-toggle="modal" data-bs-target="#descriptionModal">AI Summary</button>
+        <button class="btn" style="background:#c2a2c4;" data-bs-toggle="modal" data-bs-target="#precautionModal">Precautions</button>
+        <button class="btn" style="background:#74d99e;" data-bs-toggle="modal" data-bs-target="#medicationsModal">Medications</button>
+        <button class="btn" style="background:#209c9e;" data-bs-toggle="modal" data-bs-target="#workoutsModal">Workouts</button>
+        <button class="btn" style="background:#e37724;" data-bs-toggle="modal" data-bs-target="#dietsModal">Diets</button>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Modals -->
+    {% macro modal(id, title, body) %}
+    <div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}Label" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title" id="{{ id }}Label">{{ title }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            {{ body }}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endmacro %}
+
+    {{ modal('diseaseModal', 'Predicted Disease', predicted_disease) }}
+    {{ modal('descriptionModal', 'AI-Generated Symptom Summary', dis_des) }}
+
+    <!-- Lists -->
+    {% macro list_modal(id, title, items) %}
+    <div class="modal fade" id="{{ id }}" tabindex="-1" aria-labelledby="{{ id }}Label" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-dark text-white">
+            <h5 class="modal-title" id="{{ id }}Label">{{ title }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <ul>
+              {% for item in items %}
+                <li>{{ item }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endmacro %}
+
+    {{ list_modal('precautionModal', 'Precautions', my_precautions) }}
+    {{ list_modal('medicationsModal', 'Medications', medications) }}
+    {{ list_modal('workoutsModal', 'Workouts', workout) }}
+    {{ list_modal('dietsModal', 'Diets', my_diet) }}
+
+    <!-- Scripts -->
+    <script>
+      const startSpeechRecognitionButton = document.getElementById('startSpeechRecognition');
+      const transcriptionDiv = document.getElementById('transcription');
+
+      startSpeechRecognitionButton.addEventListener('click', () => {
+        const recognition = new webkitSpeechRecognition();
+        recognition.lang = 'en-US';
+
+        recognition.onresult = function (event) {
+          const result = event.results[0][0].transcript;
+          transcriptionDiv.textContent = result;
+          document.getElementById('symptoms').value = result;
+        };
+
+        recognition.onerror = function (event) {
+          transcriptionDiv.textContent = "Speech recognition error: " + event.error;
+        };
+
+        recognition.start();
+      });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+  </body>
+</html>
